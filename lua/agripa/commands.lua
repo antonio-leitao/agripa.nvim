@@ -18,6 +18,7 @@ function M.setup()
 		end
 	end, {})
 	vim.api.nvim_create_user_command("AgripaAI", ai.process_request, {})
+	vim.api.nvim_create_user_command("AgripaYank", ai.copy_context_to_clipboard, {})
 end
 
 return M

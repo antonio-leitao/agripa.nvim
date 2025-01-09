@@ -1,8 +1,11 @@
 local M = {}
 
--- Default configuration
+-- Extended default configuration
 M.config = {
-	auto_include_current = true, -- automatically include current file in context
+	auto_include_current = true,
+	model = "gemini",
+	system_prompt = "coder.txt",
+	prompt_template = "coder.txt", -- Add this line
 }
 
 -- Setup function with user config

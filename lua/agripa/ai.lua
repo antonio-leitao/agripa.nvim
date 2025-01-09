@@ -1,5 +1,8 @@
 local utils = require("agripa.utils")
 local context = require("agripa.context")
+local config = require("agripa")
+local gemini = require("agripa.ai.gemini")
+local prompts = require("agripa.prompts")
 
 local M = {}
 
@@ -58,61 +61,65 @@ end
 
 -- Function to get formatted prompt content
 function M.get_response(context_content, current_file, highlighted_text, prompt)
-	local response = string.format(
-		[[
-<context>
-%s
-</context>
+	-- Prepare the parts for template filling
+	local parts = {
+		context = context_content,
+		current_file = current_file,
+		highlighted = highlighted_text,
+		prompt = prompt,
+	}
 
-<current_file>
-%s
-</current_file>]],
-		context_content,
-		current_file
-	)
+	-- Get template name from config
+	local template_name = config.config.prompt_template or "default.txt"
 
-	-- Add highlighted text section if present
-	if highlighted_text and highlighted_text ~= "" then
-		response = response .. string.format(
-			[[
-
-<highlighted>
-%s
-</highlighted>]],
-			highlighted_text
-		)
-	end
-
-	-- Add prompt section if present
-	if prompt and prompt ~= "" then
-		response = response .. string.format(
-			[[
-
-<prompt>
-%s
-</prompt>]],
-			prompt
-		)
-	end
-
-	return response
+	-- Load and fill the template
+	return prompts.format_prompt(template_name, parts)
 end
-
 -- Function to process AI request with optional prompt
+-- function M.process_request_with_prompt(prompt)
+-- 	local context_content, _ = context.get_content()
+-- 	local current_file = vim.fn.expand("%:p")
+-- 	local highlighted_text = utils.get_visual_selection()
+--
+-- 	-- Get cursor position
+-- 	local cursor_pos = vim.api.nvim_win_get_cursor(0)
+-- 	local row = cursor_pos[1]
+--
+-- 	-- Get AI response
+-- 	local response = M.get_response(context_content, current_file, highlighted_text, prompt)
+--
+-- 	-- Insert response at cursor position
+-- 	local lines = vim.split(response, "\n")
+-- 	vim.api.nvim_buf_set_lines(0, row, row, false, lines)
+-- end
+
 function M.process_request_with_prompt(prompt)
 	local context_content, _ = context.get_content()
 	local current_file = vim.fn.expand("%:p")
 	local highlighted_text = utils.get_visual_selection()
 
+	-- Format the complete input for the AI
+	local input = M.get_response(context_content, current_file, highlighted_text, prompt)
+
 	-- Get cursor position
 	local cursor_pos = vim.api.nvim_win_get_cursor(0)
 	local row = cursor_pos[1]
 
-	-- Get AI response
-	local response = M.get_response(context_content, current_file, highlighted_text, prompt)
+	-- Get AI response based on configured model
+	local response
+	if config.config.model == "gemini" then
+		response = gemini.generate_response(input)
+	else
+		error("Unsupported AI model: " .. config.config.model)
+	end
+
+	-- Add error handling for nil response
+	if not response then
+		error("Received nil response from AI model")
+	end
 
 	-- Insert response at cursor position
-	local lines = vim.split(response, "\n")
+	local lines = vim.split(response, "\n", { plain = true })
 	vim.api.nvim_buf_set_lines(0, row, row, false, lines)
 end
 

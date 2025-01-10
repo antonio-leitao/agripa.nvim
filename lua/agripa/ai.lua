@@ -75,23 +75,6 @@ function M.get_response(context_content, current_file, highlighted_text, prompt)
 	-- Load and fill the template
 	return prompts.format_prompt(template_name, parts)
 end
--- Function to process AI request with optional prompt
--- function M.process_request_with_prompt(prompt)
--- 	local context_content, _ = context.get_content()
--- 	local current_file = vim.fn.expand("%:p")
--- 	local highlighted_text = utils.get_visual_selection()
---
--- 	-- Get cursor position
--- 	local cursor_pos = vim.api.nvim_win_get_cursor(0)
--- 	local row = cursor_pos[1]
---
--- 	-- Get AI response
--- 	local response = M.get_response(context_content, current_file, highlighted_text, prompt)
---
--- 	-- Insert response at cursor position
--- 	local lines = vim.split(response, "\n")
--- 	vim.api.nvim_buf_set_lines(0, row, row, false, lines)
--- end
 
 function M.process_request_with_prompt(prompt)
 	local context_content, _ = context.get_content()
@@ -100,10 +83,6 @@ function M.process_request_with_prompt(prompt)
 
 	-- Format the complete input for the AI
 	local input = M.get_response(context_content, current_file, highlighted_text, prompt)
-
-	-- Get cursor position
-	local cursor_pos = vim.api.nvim_win_get_cursor(0)
-	local row = cursor_pos[1]
 
 	-- Get AI response based on configured model
 	local response
@@ -118,9 +97,28 @@ function M.process_request_with_prompt(prompt)
 		error("Received nil response from AI model")
 	end
 
-	-- Insert response at cursor position
+	-- Split response into lines
 	local lines = vim.split(response, "\n", { plain = true })
-	vim.api.nvim_buf_set_lines(0, row, row, false, lines)
+
+	if config.config.use_separate_buffer then
+		-- Get or create output buffer
+		local output_buffer = require("agripa.output_buffer")
+		local buf_nr = output_buffer.get_output_buffer()
+
+		-- Set the lines in the buffer
+		vim.api.nvim_buf_set_lines(buf_nr, 0, -1, false, lines)
+
+		-- Display the buffer if it's not already visible
+		local buf_windows = vim.fn.win_findbuf(buf_nr)
+		if #buf_windows == 0 then
+			output_buffer.display_in_vsplit(buf_nr)
+		end
+	else
+		-- Get cursor position and insert in current buffer
+		local cursor_pos = vim.api.nvim_win_get_cursor(0)
+		local row = cursor_pos[1]
+		vim.api.nvim_buf_set_lines(0, row, row, false, lines)
+	end
 end
 
 -- Function to copy context to clipboard

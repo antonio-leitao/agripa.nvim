@@ -10,7 +10,7 @@ A Neovim plugin for AI-powered code assistance.
 -   **Configurable AI Model:** Supports different AI models (currently Gemini).
 -   **Customizable Prompts:** Use templates to format your requests.
 -   **Telescope Integration:** Use Telescope to easily add and remove files from the context.
-    
+
 ## Installation
 
 Using packer:
@@ -49,7 +49,8 @@ require('agripa').setup({
   auto_include_current = true,
   model = "gemini",
   system_prompt = "coder.txt",
-  prompt_template = "coder.txt"
+  prompt_template = "coder.txt",
+  use_separate_buffer = true
 })
 ```
 
@@ -57,6 +58,7 @@ require('agripa').setup({
 -   `model`: The AI model to use (e.g., "gemini").
 -   `system_prompt`: The system prompt file to use.
 -   `prompt_template`: The prompt template file to use.
+-   `use_separate_buffer`: Output the AI response in a separate buffer
 
 ## Dependencies
 
@@ -65,4 +67,3 @@ require('agripa').setup({
 
 ## API Key
 Set the `GOOGLE_API_KEY` environment variable for Gemini models.
-

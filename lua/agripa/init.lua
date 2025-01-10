@@ -5,7 +5,8 @@ M.config = {
 	auto_include_current = true,
 	model = "gemini",
 	system_prompt = "coder.txt",
-	prompt_template = "coder.txt", -- Add this line
+	prompt_template = "coder.txt",
+	use_separate_buffer = true, -- Add this line
 }
 
 -- Setup function with user config

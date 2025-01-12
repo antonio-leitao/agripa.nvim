@@ -4,12 +4,21 @@ A Neovim plugin for AI-powered code assistance.
 
 ## Features
 
--   **Context Management:** Add files to the AI's context for more informed responses.
--   **AI Prompting:** Send prompts to the AI model and insert the response directly into your code.
--   **Clipboard Integration:** Copy the current context to the clipboard for sharing.
--   **Configurable AI Model:** Supports different AI models (currently Gemini).
--   **Customizable Prompts:** Use templates to format your requests.
--   **Telescope Integration:** Use Telescope to easily add and remove files from the context.
+### Persistent Context Management
+- **Keep Relevant Files in Context:** Agripa allows you to add multiple files to a persistent context, ensuring that the AI has all the necessary information for each request.
+- **User-Managed Context:** You have full control over the context. Add or remove files as needed.
+- **Intelligent Context Usage:** The plugin automatically includes the content of your context files when you interact with the AI, making sure it understands the project's structure and logic.
+
+### Seamless AI Integration
+- **Prompt Window:** Easily craft prompts through a floating window, which supports multi-line inputs.
+- **Multiple AI Model Support:** Choose between models like Gemini for flexible AI interaction.
+- **Thinking Feedback:** See immediate "Thinking..." feedback in your buffer, keeping you informed during processing.
+- **Response Display:** AI-generated responses are displayed either in a separate buffer or directly in your current buffer.
+
+### Enhanced Workflow
+- **Telescope Integration:** Use Telescope to easily add or remove files from the context.
+- **Clipboard Context:** Copy the current context to your clipboard with a single command.
+- **Automatic Inclusion:** Configure the plugin to automatically include the current file in the context if not already added.
 
 ## Installation
 

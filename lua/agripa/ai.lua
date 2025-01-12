@@ -84,41 +84,65 @@ function M.process_request_with_prompt(prompt)
 	-- Format the complete input for the AI
 	local input = M.get_response(context_content, current_file, highlighted_text, prompt)
 
-	-- Get AI response based on configured model
-	local response
-	if config.config.model == "gemini" then
-		response = gemini.generate_response(input)
-	else
-		error("Unsupported AI model: " .. config.config.model)
-	end
+	-- Variables to store buffer info for later use
+	local buf_nr, row
 
-	-- Add error handling for nil response
-	if not response then
-		error("Received nil response from AI model")
-	end
+	-- Show "Thinking..." message and prepare for response
+	vim.schedule(function()
+		if config.config.use_separate_buffer then
+			-- Get or create output buffer
+			local output_buffer = require("agripa.output_buffer")
+			buf_nr = output_buffer.get_output_buffer()
 
-	-- Split response into lines
-	local lines = vim.split(response, "\n", { plain = true })
+			-- Set the "Thinking..." message
+			vim.api.nvim_buf_set_lines(buf_nr, 0, -1, false, { "Thinking..." })
 
-	if config.config.use_separate_buffer then
-		-- Get or create output buffer
-		local output_buffer = require("agripa.output_buffer")
-		local buf_nr = output_buffer.get_output_buffer()
-
-		-- Set the lines in the buffer
-		vim.api.nvim_buf_set_lines(buf_nr, 0, -1, false, lines)
-
-		-- Display the buffer if it's not already visible
-		local buf_windows = vim.fn.win_findbuf(buf_nr)
-		if #buf_windows == 0 then
-			output_buffer.display_in_vsplit(buf_nr)
+			-- Display the buffer if it's not already visible
+			local buf_windows = vim.fn.win_findbuf(buf_nr)
+			if #buf_windows == 0 then
+				output_buffer.display_in_vsplit(buf_nr)
+			end
+		else
+			-- Get cursor position and insert "Thinking..." in current buffer
+			local cursor_pos = vim.api.nvim_win_get_cursor(0)
+			row = cursor_pos[1]
+			buf_nr = vim.api.nvim_get_current_buf()
+			vim.api.nvim_buf_set_lines(buf_nr, row - 1, row - 1, false, { "Thinking..." })
 		end
-	else
-		-- Get cursor position and insert in current buffer
-		local cursor_pos = vim.api.nvim_win_get_cursor(0)
-		local row = cursor_pos[1]
-		vim.api.nvim_buf_set_lines(0, row, row, false, lines)
-	end
+
+		-- Force a redraw to show the "Thinking..." message
+		vim.cmd("redraw")
+
+		-- Get AI response in a new thread
+		vim.schedule(function()
+			-- Get AI response based on configured model
+			local response
+			if config.config.model == "gemini" then
+				response = gemini.generate_response(input)
+			else
+				error("Unsupported AI model: " .. config.config.model)
+			end
+
+			-- Add error handling for nil response
+			if not response then
+				error("Received nil response from AI model")
+			end
+
+			-- Split response into lines
+			local lines = vim.split(response, "\n", { plain = true })
+
+			-- Schedule the UI update with the response
+			vim.schedule(function()
+				if config.config.use_separate_buffer then
+					-- Replace "Thinking..." with the actual response
+					vim.api.nvim_buf_set_lines(buf_nr, 0, -1, false, lines)
+				else
+					-- Replace "Thinking..." with the actual response in current buffer
+					vim.api.nvim_buf_set_lines(buf_nr, row - 1, row, false, lines)
+				end
+			end)
+		end)
+	end)
 end
 
 -- Function to copy context to clipboard

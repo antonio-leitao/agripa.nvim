@@ -9,6 +9,7 @@ function M.toggle_context()
 	local temp_context = vim.deepcopy(context.files) -- Create a copy of the context files
 
 	telescope.find_files({
+		results_title = "AGRIPA CONTEXT", -- Set the results title here
 		attach_mappings = function(prompt_bufnr, map)
 			-- Toggle file context on TAB
 			local function toggle_context()

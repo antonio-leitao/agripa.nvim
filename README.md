@@ -2,6 +2,10 @@
 
 A Neovim plugin for AI-powered code assistance.
 
+<p align="center">
+  <img alt="Agripa Demo" src="assets/demo.gif" width="600" />
+</p>
+
 ## Features
 
 ### Persistent Context Management
@@ -44,8 +48,7 @@ Using lazy:
 ## Usage
 
 ### Commands
--   `:AgripaAdd` - Add files to the context using Telescope.
--   `:AgripaRemove` - Remove files from the context using Telescope.
+-   `:AgripaContext` - Add and remove files to the context using Telescope.
 -   `:AgripaList` - List all files currently in the context.
 -   `:AgripaAI` - Open a prompt window and send a request to the AI model.
 -   `:AgripaYank` - Copy the current context to the clipboard.

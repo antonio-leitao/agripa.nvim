@@ -3,7 +3,7 @@ local context = require("agripa.context")
 local M = {}
 
 function M.setup()
-	vim.api.nvim_create_user_command("AgripaToggle", telescope.toggle_context, {})
+	vim.api.nvim_create_user_command("AgripaContext", telescope.toggle_context, {})
 	vim.api.nvim_create_user_command("AgripaList", function()
 		if #context.files == 0 then
 			print("No files in context")

@@ -1,8 +1,78 @@
+local telescope = require("telescope.builtin")
 local context = require("agripa.context")
+local actions = require("telescope.actions")
+local action_state = require("telescope.actions.state")
+
 local M = {}
 
--- Helper function to check if a file is in context
-local function is_file_in_context(file_path)
+function M.toggle_context()
+	telescope.find_files({
+		attach_mappings = function(prompt_bufnr, map)
+			-- Toggle file context on TAB
+			local function toggle_context()
+				local entry = action_state.get_selected_entry()
+				local file_path = entry.path
+
+				if not file_path then
+					print("No file selected")
+					return
+				end
+
+				if M.is_in_context(file_path) then
+					M.remove_from_context(file_path)
+				else
+					table.insert(context.files, file_path)
+				end
+
+				-- Refresh Telescope picker display
+				local picker = action_state.get_current_picker(prompt_bufnr)
+				picker:refresh(picker._finder, { reset_prompt = false })
+			end
+
+			-- Apply changes on ENTER and close picker
+			local function apply_changes_and_close()
+				actions.close(prompt_bufnr)
+				print("Context updated")
+			end
+
+			-- Close picker without applying changes on ESC
+			local function close_without_changes()
+				actions.close(prompt_bufnr)
+				print("No changes applied")
+			end
+
+			map("i", "<Tab>", toggle_context)
+			map("n", "<Tab>", toggle_context)
+
+			map("i", "<CR>", apply_changes_and_close)
+			map("n", "<CR>", apply_changes_and_close)
+
+			map("i", "<Esc>", close_without_changes)
+			map("n", "<Esc>", close_without_changes)
+
+			return true
+		end,
+		entry_maker = function(entry)
+			local make_entry = require("telescope.make_entry")
+			local default_entry_maker = make_entry.gen_from_file({})
+
+			local default_entry = default_entry_maker(entry)
+
+			-- Add indicator to display
+			local original_display = default_entry.display
+			default_entry.display = function(entry_tbl)
+				local display, hl_group = original_display(entry_tbl)
+				local in_context = M.is_in_context(default_entry.path) -- Dynamically check
+				local marker = in_context and "[x] " or "[ ] "
+				return marker .. display, hl_group
+			end
+
+			return default_entry
+		end,
+	})
+end
+
+function M.is_in_context(file_path)
 	for _, existing_file in ipairs(context.files) do
 		if existing_file == file_path then
 			return true
@@ -11,136 +81,13 @@ local function is_file_in_context(file_path)
 	return false
 end
 
--- Telescope integration for adding files
-function M.add_to_context()
-	local telescope = require("telescope.builtin")
-	local actions = require("telescope.actions")
-	local action_state = require("telescope.actions.state")
-
-	telescope.find_files({
-		attach_mappings = function(prompt_bufnr, map)
-			-- Add custom toggle mapping for multi-select
-			map("i", "<tab>", actions.toggle_selection)
-			map("n", "<tab>", actions.toggle_selection)
-
-			actions.select_default:replace(function()
-				local picker = action_state.get_current_picker(prompt_bufnr)
-				local selections = picker:get_multi_selection()
-
-				-- If no multi-selection, get the current selection
-				if #selections == 0 then
-					local entry = action_state.get_selected_entry()
-					if entry then
-						selections = { entry }
-					end
-				end
-
-				actions.close(prompt_bufnr)
-
-				-- Process all selections
-				if selections then
-					for _, selection in ipairs(selections) do
-						local file_path = selection.path
-						if not is_file_in_context(file_path) then
-							table.insert(context.files, file_path)
-							print("Added to context: " .. file_path)
-						else
-							print("Already in context: " .. file_path)
-						end
-					end
-				end
-			end)
-			return true
-		end,
-		entry_maker = function(entry)
-			-- Get the default entry maker from telescope
-			local make_entry = require("telescope.make_entry")
-			local default_entry_maker = make_entry.gen_from_file({})
-
-			-- Create the default entry with icons
-			local default_entry = default_entry_maker(entry)
-			local in_context = is_file_in_context(entry)
-
-			-- Modify the display function to add context marker
-			local original_display = default_entry.display
-			default_entry.display = function(entry_tbl)
-				local display, hl_group = original_display(entry_tbl)
-				if in_context then
-					-- Add highlight group for dimmed text
-					return "> " .. display, { { { 0, 2 }, "Comment" }, { { 2, #display + 2 }, "Comment" } }
-				end
-				return display, hl_group
-			end
-
-			return default_entry
-		end,
-	})
-end
-
--- Telescope integration for removing files
-function M.remove_from_context()
-	local pickers = require("telescope.pickers")
-	local finders = require("telescope.finders")
-	local conf = require("telescope.config").values
-	local actions = require("telescope.actions")
-	local action_state = require("telescope.actions.state")
-
-	-- Only proceed if we have files in context
-	if #context.files == 0 then
-		print("No files in context to remove")
-		return
+function M.remove_from_context(file_path)
+	for i, existing_file in ipairs(context.files) do
+		if existing_file == file_path then
+			table.remove(context.files, i)
+			return
+		end
 	end
-
-	pickers
-		.new({}, {
-			prompt_title = "Remove from Context",
-			finder = finders.new_table({
-				results = context.files,
-				entry_maker = function(entry)
-					-- Get the default entry maker from telescope
-					local make_entry = require("telescope.make_entry")
-					local default_entry_maker = make_entry.gen_from_file({})
-					return default_entry_maker(entry)
-				end,
-			}),
-			sorter = conf.generic_sorter({}),
-			attach_mappings = function(prompt_bufnr, map)
-				-- Add custom toggle mapping for multi-select
-				map("i", "<tab>", actions.toggle_selection)
-				map("n", "<tab>", actions.toggle_selection)
-
-				actions.select_default:replace(function()
-					local picker = action_state.get_current_picker(prompt_bufnr)
-					local selections = picker:get_multi_selection()
-
-					-- If no multi-selection, get the current selection
-					if #selections == 0 then
-						local entry = action_state.get_selected_entry()
-						if entry then
-							selections = { entry }
-						end
-					end
-
-					actions.close(prompt_bufnr)
-
-					-- Process all selections
-					if selections then
-						for _, selection in ipairs(selections) do
-							local file_path = selection.value
-							for i, existing_file in ipairs(context.files) do
-								if existing_file == file_path then
-									table.remove(context.files, i)
-									print("Removed from context: " .. file_path)
-									break
-								end
-							end
-						end
-					end
-				end)
-				return true
-			end,
-		})
-		:find()
 end
 
 return M

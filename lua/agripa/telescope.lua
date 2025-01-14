@@ -30,7 +30,6 @@ function M.toggle_context()
 				-- Refresh Telescope picker display
 				local picker = action_state.get_current_picker(prompt_bufnr)
 				local current_index = picker._selection_row
-				print(current_index)
 				picker:refresh(picker._finder, { reset_prompt = false })
 				vim.defer_fn(function()
 					picker:set_selection(current_index)
